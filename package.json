@@ -1,19 +1,35 @@
 {
   "name": "hamza-dex",
   "version": "1.0.0",
-  "description": "Uniswap V2-style AMM DEX on Sepolia",
+  "description": "Production-quality AMM DEX with constant product formula, LP tokens, and React frontend",
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
+    "test:coverage": "hardhat coverage",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
-    "verify": "hardhat verify --network sepolia"
+    "seed:local": "hardhat run scripts/seed-liquidity.js --network localhost",
+    "seed:sepolia": "hardhat run scripts/seed-liquidity.js --network sepolia",
+    "node": "hardhat node",
+    "gas-report": "REPORT_GAS=true hardhat test",
+    "clean": "hardhat clean",
+    "size": "hardhat size-contracts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-    "hardhat": "^2.19.0"
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "hardhat": "^2.19.0",
+    "hardhat-gas-reporter": "^1.0.10",
+    "hardhat-contract-sizer": "^2.10.0",
+    "solidity-coverage": "^0.8.5",
+    "chai": "^4.3.10"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.0.0",
-    "dotenv": "^16.0.0"
+    "@openzeppelin/contracts": "^5.0.1",
+    "ethers": "^6.9.0",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
