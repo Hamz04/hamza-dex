@@ -1,323 +1,300 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import { createChart, ColorType, LineStyle } from "lightweight-charts";
-import { ethers } from "ethers";
-import {
-  getRouterContract,
-  getPoolContract,
-  getTokenList,
-  LIQUIDITY_POOL_ABI,
-} from "../utils/contracts.js";
-import { formatTokenAmount } from "../utils/calculations.js";
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { createChart, CrosshairMode } from 'lightweight-charts';
+import { ethers } from 'ethers';
+import { getPoolContract } from '../utils/contracts';
 
-// ── Pair selector ─────────────────────────────────────────────────
-const TIMEFRAMES = [
-  { label: "1H",  hours: 1   },
-  { label: "6H",  hours: 6   },
-  { label: "24H", hours: 24  },
-  { label: "7D",  hours: 168 },
-];
+/**
+ * PriceChart.jsx
+ * Production-quality candlestick + volume chart for HamzaDEX pool price history.
+ * Queries on-chain Swap events, groups them into OHLCV candles, and renders
+ * via lightweight-charts.
+ */
 
-function buildMockHistory(currentPrice, hours, points = 60) {
-  // Generates realistic-looking mock OHLCV data for demo purposes
-  // In production, replace with on-chain event indexing or a subgraph
-  const now   = Math.floor(Date.now() / 1000);
-  const step  = Math.floor((hours * 3600) / points);
-  const data  = [];
-  let price   = currentPrice * (0.85 + Math.random() * 0.3);
+const TIMEFRAMES = {
+  '1H': 3600,
+  '4H': 14400,
+  '1D': 86400,
+};
 
-  for (let i = points; i >= 0; i--) {
-    const time  = now - i * step;
-    const open  = price;
-    const vol   = price * (0.005 + Math.random() * 0.02);
-    const close = price + (Math.random() - 0.48) * vol * 2;
-    const high  = Math.max(open, close) + Math.random() * vol;
-    const low   = Math.min(open, close) - Math.random() * vol;
-    data.push({ time, open, high, low, close: Math.max(close, 0.000001) });
-    price = close;
+const CHART_COLORS = {
+  background: '#0f1117',
+  text: '#d1d4dc',
+  grid: '#1e2130',
+  upColor: '#26a69a',
+  downColor: '#ef5350',
+  volumeUp: 'rgba(38,166,154,0.4)',
+  volumeDown: 'rgba(239,83,80,0.4)',
+  crosshair: '#758696',
+};
+
+/**
+ * Group raw price points into OHLCV candles for the given interval (seconds).
+ */
+function groupIntoCandles(pricePoints, intervalSecs) {
+  if (!pricePoints.length) return { candles: [], volumes: [] };
+
+  const buckets = {};
+  for (const { timestamp, price, amountIn } of pricePoints) {
+    const bucket = Math.floor(timestamp / intervalSecs) * intervalSecs;
+    if (!buckets[bucket]) {
+      buckets[bucket] = { open: price, high: price, low: price, close: price, volume: 0 };
+    }
+    const b = buckets[bucket];
+    b.high = Math.max(b.high, price);
+    b.low = Math.min(b.low, price);
+    b.close = price;
+    b.volume += amountIn;
   }
 
-  return data;
+  const sorted = Object.entries(buckets)
+    .map(([time, ohlcv]) => ({ time: parseInt(time, 10), ...ohlcv }))
+    .sort((a, b) => a.time - b.time);
+
+  const candles = sorted.map(({ time, open, high, low, close }) => ({ time, open, high, low, close }));
+  const volumes = sorted.map(({ time, open, close, volume }) => ({
+    time,
+    value: volume,
+    color: close >= open ? CHART_COLORS.volumeUp : CHART_COLORS.volumeDown,
+  }));
+
+  return { candles, volumes };
 }
 
-async function fetchPriceHistory(provider, chainId, tokenAAddress, tokenBAddress, hours) {
-  try {
-    const router  = getRouterContract(provider, chainId);
-    const pairAddr = await router.getPair(tokenAAddress, tokenBAddress);
-    if (!pairAddr || pairAddr === ethers.ZeroAddress) return null;
-
-    const pool = getPoolContract(pairAddr, provider);
-
-    // Fetch current spot price
-    let spotPrice = 0;
-    try {
-      const raw = await pool.getSpotPrice();
-      spotPrice = Number(raw) / 1e18;
-    } catch { spotPrice = 1; }
-
-    // In production: query Swap events from the pool contract for real history
-    // For now, generate plausible mock data seeded from the real spot price
-    const history = buildMockHistory(spotPrice, hours);
-    return { history, spotPrice, pairAddr };
-  } catch {
-    return null;
-  }
-}
-
-// ── Chart component ───────────────────────────────────────────────
-export default function PriceChart({ wallet }) {
+export default function PriceChart({
+  poolAddress,
+  provider,
+  tokenASymbol = 'TOKEN_A',
+  tokenBSymbol = 'TOKEN_B',
+}) {
   const chartContainerRef = useRef(null);
-  const chartRef          = useRef(null);
-  const seriesRef         = useRef(null);
+  const chartRef = useRef(null);
+  const candleSeriesRef = useRef(null);
+  const volumeSeriesRef = useRef(null);
 
-  const tokens    = getTokenList(wallet.chainId ?? 31337n);
-  const [tokenA, setTokenA] = useState(tokens[0] || null);
-  const [tokenB, setTokenB] = useState(tokens[1] || null);
-  const [timeframe, setTimeframe] = useState(TIMEFRAMES[2]); // 24H default
-  const [loading, setLoading]     = useState(false);
-  const [spotPrice, setSpotPrice] = useState(null);
-  const [pairAddr, setPairAddr]   = useState(null);
-  const [reserves, setReserves]   = useState(null);
-  const [priceChange, setPriceChange] = useState(null);
+  const [timeframe, setTimeframe] = useState('1H');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [emptyReason, setEmptyReason] = useState(null);
+  const [pricePoints, setPricePoints] = useState([]);
+  const [lastPrice, setLastPrice] = useState(null);
 
-  // ── Initialise chart ────────────────────────────────────────────
+  // Chart initialisation
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: "#0f172a" },
-        textColor: "#94a3b8",
-      },
+      width: chartContainerRef.current.clientWidth,
+      height: 320,
+      layout: { background: { color: CHART_COLORS.background }, textColor: CHART_COLORS.text },
       grid: {
-        vertLines: { color: "#1e293b", style: LineStyle.Dotted },
-        horzLines: { color: "#1e293b", style: LineStyle.Dotted },
+        vertLines: { color: CHART_COLORS.grid },
+        horzLines: { color: CHART_COLORS.grid },
       },
-      crosshair: {
-        mode: 1,
-        vertLine: { color: "#6366f1", style: LineStyle.Dashed, width: 1 },
-        horzLine: { color: "#6366f1", style: LineStyle.Dashed, width: 1 },
-      },
-      rightPriceScale: {
-        borderColor: "#1e293b",
-        textColor: "#64748b",
-      },
-      timeScale: {
-        borderColor: "#1e293b",
-        timeVisible: true,
-        secondsVisible: false,
-      },
-      handleScroll: { mouseWheel: true, pressedMouseMove: true },
-      handleScale:  { mouseWheel: true, pinch: true },
+      crosshair: { mode: CrosshairMode.Normal },
+      rightPriceScale: { borderColor: CHART_COLORS.grid },
+      timeScale: { borderColor: CHART_COLORS.grid, timeVisible: true, secondsVisible: false },
     });
 
     const candleSeries = chart.addCandlestickSeries({
-      upColor:         "#10b981",
-      downColor:       "#ef4444",
-      borderUpColor:   "#10b981",
-      borderDownColor: "#ef4444",
-      wickUpColor:     "#10b981",
-      wickDownColor:   "#ef4444",
+      upColor: CHART_COLORS.upColor,
+      downColor: CHART_COLORS.downColor,
+      borderUpColor: CHART_COLORS.upColor,
+      borderDownColor: CHART_COLORS.downColor,
+      wickUpColor: CHART_COLORS.upColor,
+      wickDownColor: CHART_COLORS.downColor,
     });
 
-    chartRef.current  = chart;
-    seriesRef.current = candleSeries;
+    const volumeSeries = chart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: 'volume',
+      scaleMargins: { top: 0.8, bottom: 0 },
+    });
 
-    // Responsive resize
-    const resizeObserver = new ResizeObserver(() => {
+    chartRef.current = chart;
+    candleSeriesRef.current = candleSeries;
+    volumeSeriesRef.current = volumeSeries;
+
+    const handleResize = () => {
       if (chartContainerRef.current) {
         chart.applyOptions({ width: chartContainerRef.current.clientWidth });
       }
-    });
-    resizeObserver.observe(chartContainerRef.current);
+    };
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
       chart.remove();
-      chartRef.current  = null;
-      seriesRef.current = null;
     };
   }, []);
 
-  // ── Load data ───────────────────────────────────────────────────
-  const loadData = useCallback(async () => {
-    if (!tokenA || !tokenB || !wallet.provider || !wallet.chainId) return;
-    setLoading(true);
-
-    const result = await fetchPriceHistory(
-      wallet.provider,
-      wallet.chainId,
-      tokenA.address,
-      tokenB.address,
-      timeframe.hours
-    );
-
-    if (result && seriesRef.current) {
-      seriesRef.current.setData(result.history);
-      chartRef.current?.timeScale().fitContent();
-
-      setSpotPrice(result.spotPrice);
-      setPairAddr(result.pairAddr);
-
-      // Calculate 24h price change
-      if (result.history.length >= 2) {
-        const first = result.history[0].open;
-        const last  = result.history[result.history.length - 1].close;
-        setPriceChange(((last - first) / first) * 100);
-      }
-
-      // Fetch reserves
-      try {
-        const pool = getPoolContract(result.pairAddr, wallet.provider);
-        const [rA, rB] = await pool.getReserves();
-        const token0   = await pool.tokenA();
-        const [resA, resB] = token0.toLowerCase() === tokenA.address.toLowerCase()
-          ? [rA, rB] : [rB, rA];
-        setReserves({ a: resA, b: resB });
-      } catch {}
+  // Fetch swap events
+  const fetchPriceHistory = useCallback(async () => {
+    if (!poolAddress || !provider) {
+      setEmptyReason('Connect wallet and select a pool to view price history');
+      setPricePoints([]);
+      return;
     }
 
-    setLoading(false);
-  }, [tokenA, tokenB, wallet.provider, wallet.chainId, timeframe]);
+    setLoading(true);
+    setError(null);
+    setEmptyReason(null);
 
-  useEffect(() => { loadData(); }, [loadData]);
+    try {
+      const poolContract = getPoolContract(poolAddress, provider);
 
-  // Auto-refresh every 30s
+      const swapFilter = poolContract.filters.Swap();
+      const currentBlock = await provider.getBlockNumber();
+      const fromBlock = Math.max(0, currentBlock - 2000);
+
+      const logs = await provider.getLogs({
+        ...swapFilter,
+        fromBlock,
+        toBlock: 'latest',
+      });
+
+      if (!logs.length) {
+        setEmptyReason('No swaps yet — execute trades to populate price history');
+        setPricePoints([]);
+        setLoading(false);
+        return;
+      }
+
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const points = [];
+
+      for (const log of logs) {
+        try {
+          const [amountIn, amountOut] = abiCoder.decode(['uint256', 'uint256', 'address'], log.data);
+          const block = await provider.getBlock(log.blockNumber);
+          if (!block) continue;
+
+          const amtIn = parseFloat(ethers.formatUnits(amountIn, 18));
+          const amtOut = parseFloat(ethers.formatUnits(amountOut, 18));
+          if (amtIn === 0) continue;
+
+          const price = amtOut / amtIn;
+          points.push({ timestamp: block.timestamp, price, amountIn: amtIn });
+        } catch {
+          // skip malformed logs
+        }
+      }
+
+      if (!points.length) {
+        setEmptyReason('No swaps yet — execute trades to populate price history');
+        setPricePoints([]);
+      } else {
+        points.sort((a, b) => a.timestamp - b.timestamp);
+        setPricePoints(points);
+        setLastPrice(points[points.length - 1].price);
+      }
+    } catch (err) {
+      setError(err.message ?? 'Failed to load price history');
+    } finally {
+      setLoading(false);
+    }
+  }, [poolAddress, provider]);
+
   useEffect(() => {
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
-  }, [loadData]);
+    fetchPriceHistory();
+  }, [fetchPriceHistory]);
 
-  const isPositive = priceChange !== null && priceChange >= 0;
+  // Re-render candles on timeframe or data change
+  useEffect(() => {
+    if (!candleSeriesRef.current || !volumeSeriesRef.current) return;
+    if (!pricePoints.length) {
+      candleSeriesRef.current.setData([]);
+      volumeSeriesRef.current.setData([]);
+      return;
+    }
+    const intervalSecs = TIMEFRAMES[timeframe];
+    const { candles, volumes } = groupIntoCandles(pricePoints, intervalSecs);
+    candleSeriesRef.current.setData(candles);
+    volumeSeriesRef.current.setData(volumes);
+    if (chartRef.current) chartRef.current.timeScale().fitContent();
+  }, [pricePoints, timeframe]);
+
+  const showEmpty = !loading && (emptyReason || error);
 
   return (
-    <div className="card w-full">
+    <div style={{ background: CHART_COLORS.background, borderRadius: 12, padding: 16, color: CHART_COLORS.text }}>
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div>
-          {/* Pair selector */}
-          <div className="flex items-center gap-2 mb-2">
-            <select
-              value={tokenA?.address || ""}
-              onChange={e => setTokenA(tokens.find(t => t.address === e.target.value))}
-              className="bg-slate-800 border border-slate-700 text-slate-100 rounded-lg px-2 py-1.5 text-sm outline-none"
-            >
-              {tokens.filter(t => t.address !== tokenB?.address).map(t => (
-                <option key={t.address} value={t.address}>{t.symbol}</option>
-              ))}
-            </select>
-            <span className="text-slate-500">/</span>
-            <select
-              value={tokenB?.address || ""}
-              onChange={e => setTokenB(tokens.find(t => t.address === e.target.value))}
-              className="bg-slate-800 border border-slate-700 text-slate-100 rounded-lg px-2 py-1.5 text-sm outline-none"
-            >
-              {tokens.filter(t => t.address !== tokenA?.address).map(t => (
-                <option key={t.address} value={t.address}>{t.symbol}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Price display */}
-          {spotPrice !== null && (
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-slate-100 tabular-nums">
-                {spotPrice.toFixed(6)}
-              </span>
-              <span className="text-sm text-slate-400">{tokenB?.symbol} per {tokenA?.symbol}</span>
-              {priceChange !== null && (
-                <span className={`text-sm font-semibold ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
-                  {isPositive ? "+" : ""}{priceChange.toFixed(2)}%
-                </span>
-              )}
-            </div>
+          <span style={{ fontWeight: 700, fontSize: 16 }}>
+            {tokenASymbol} / {tokenBSymbol}
+          </span>
+          {lastPrice !== null && (
+            <span style={{ marginLeft: 12, fontSize: 14, color: CHART_COLORS.upColor }}>
+              {lastPrice.toFixed(6)}
+            </span>
           )}
         </div>
 
         {/* Timeframe buttons */}
-        <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl">
-          {TIMEFRAMES.map(tf => (
+        <div style={{ display: 'flex', gap: 6 }}>
+          {Object.keys(TIMEFRAMES).map((tf) => (
             <button
-              key={tf.label}
+              key={tf}
               onClick={() => setTimeframe(tf)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                timeframe.label === tf.label
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
+              style={{
+                padding: '4px 10px',
+                borderRadius: 6,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                background: timeframe === tf ? '#3a3f5c' : '#1e2130',
+                color: timeframe === tf ? '#fff' : CHART_COLORS.text,
+                transition: 'background 0.15s',
+              }}
             >
-              {tf.label}
+              {tf}
             </button>
           ))}
           <button
-            onClick={loadData}
-            className="px-2 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
-            title="Refresh"
+            onClick={fetchPriceHistory}
+            disabled={loading}
+            style={{
+              padding: '4px 10px',
+              borderRadius: 6,
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: 12,
+              background: '#1e2130',
+              color: CHART_COLORS.text,
+            }}
           >
-            ↻
+            {loading ? '...' : '\u21bb'}
           </button>
         </div>
       </div>
 
-      {/* Stats row */}
-      {reserves && (
-        <div className="flex flex-wrap gap-6 mb-4 text-sm text-slate-400 border-b border-slate-800 pb-4">
-          <div>
-            <span className="text-slate-500 text-xs uppercase tracking-wider block mb-0.5">
-              {tokenA?.symbol} Reserve
-            </span>
-            <span className="text-slate-200 font-medium tabular-nums">
-              {formatTokenAmount(reserves.a, 18, 2)}
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-500 text-xs uppercase tracking-wider block mb-0.5">
-              {tokenB?.symbol} Reserve
-            </span>
-            <span className="text-slate-200 font-medium tabular-nums">
-              {formatTokenAmount(reserves.b, 18, 2)}
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-500 text-xs uppercase tracking-wider block mb-0.5">Fee</span>
-            <span className="text-slate-200 font-medium">0.3%</span>
-          </div>
-          {pairAddr && (
-            <div>
-              <span className="text-slate-500 text-xs uppercase tracking-wider block mb-0.5">Pool</span>
-              <a
-                href={`https://sepolia.etherscan.io/address/${pairAddr}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-indigo-400 hover:text-indigo-300 font-mono text-xs underline"
-              >
-                {pairAddr.slice(0, 6)}...{pairAddr.slice(-4)}
-              </a>
-            </div>
-          )}
+      {/* Chart canvas */}
+      <div ref={chartContainerRef} style={{ width: '100%', display: showEmpty ? 'none' : 'block' }} />
+
+      {/* Empty / error state overlay */}
+      {showEmpty && (
+        <div
+          style={{
+            height: 320,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#758696',
+            fontSize: 14,
+            textAlign: 'center',
+            padding: '0 24px',
+          }}
+        >
+          {error ? `Error: ${error}` : emptyReason}
         </div>
       )}
 
-      {/* Chart */}
-      <div className="relative">
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/60 rounded-xl z-10">
-            <div className="flex flex-col items-center gap-2 text-slate-400">
-              <span className="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-              <span className="text-sm">Loading chart...</span>
-            </div>
-          </div>
-        )}
-        <div
-          ref={chartContainerRef}
-          className="w-full rounded-xl overflow-hidden"
-          style={{ height: "380px" }}
-        />
-      </div>
-
-      {/* Disclaimer */}
-      <p className="text-slate-600 text-xs mt-3 text-center">
-        Chart data is simulated for demonstration. Connect to Sepolia and deploy contracts to see live on-chain prices.
-      </p>
+      {loading && (
+        <div style={{ textAlign: 'center', padding: 12, color: '#758696', fontSize: 13 }}>
+          Loading price history...
+        </div>
+      )}
     </div>
   );
 }
