@@ -119,7 +119,7 @@ export default function App() {
               H
             </div>
             <div>
-              <span className="font-bold text-lg text-gradient">HamzaDEX</span>
+              <span className="font-bold text-lg text-gradient">ArcSwap</span>
               <span className="ml-2 text-[10px] text-slate-500 uppercase tracking-widest font-medium">v1.0</span>
             </div>
           </div>
@@ -158,7 +158,7 @@ export default function App() {
       {wallet.address && !isCorrectNetwork && wallet.chainId && (
         <div className="relative z-10 bg-yellow-900/60 border-b border-yellow-700/50 px-4 py-3 text-center">
           <p className="text-yellow-300 text-sm font-medium">
-            Please switch to Sepolia testnet to use HamzaDEX.{" "}
+            Please switch to Sepolia testnet to use ArcSwap.{" "}
             <button
               onClick={wallet.switchToSepolia}
               className="underline hover:text-yellow-100 transition-colors font-semibold"
@@ -174,7 +174,7 @@ export default function App() {
 
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatCard label="Total Pairs"   value="3"          sub="HAMZA/WETH, HAMZA/USDC, WETH/USDC" />
+          <StatCard label="Total Pairs"   value="3"          sub="ARC/WETH, ARC/USDC, WETH/USDC" />
           <StatCard label="Network"       value={networkLabel ?? "—"} sub={isCorrectNetwork ? "Connected" : "Wrong network"} />
           <StatCard label="Protocol Fee"  value="0.3%"       sub="Earned by LPs" />
           <StatCard label="AMM Formula"   value="x · y = k"  sub="Constant product" />
@@ -222,11 +222,11 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-[10px]">H</div>
-            <span className="text-slate-500 text-sm">HamzaDEX — Built by Hamza Ahmad</span>
+            <span className="text-slate-500 text-sm">ArcSwap — Built by Hamzy</span>
           </div>
           <div className="flex items-center gap-6 text-slate-500 text-sm">
             <a
-              href="https://github.com/Hamz04/hamza-dex"
+              href="https://github.com/Hamz04/arc-swap"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-slate-300 transition-colors"

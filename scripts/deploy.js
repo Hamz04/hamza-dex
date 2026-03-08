@@ -1,12 +1,12 @@
 /**
- * HamzaDEX Deployment Script
+ * ArcSwap Deployment Script
  * ─────────────────────────────────────────────────────────────────
  * Deploys:
- *   1. HamzaToken (HAMZA) — primary governance/utility token
- *   2. HamzaToken (WETH)  — wrapped ETH mock for testnet
- *   3. HamzaToken (USDC)  — stablecoin mock for testnet
- *   4. HamzaSwap router
- *   5. Creates HAMZA/WETH and HAMZA/USDC pairs
+ *   1. ArcToken (ARC) — primary governance/utility token
+ *   2. ArcToken (WETH)  — wrapped ETH mock for testnet
+ *   3. ArcToken (USDC)  — stablecoin mock for testnet
+ *   4. ArcSwap router
+ *   5. Creates ARC/WETH and ARC/USDC pairs
  *   6. Verifies all contracts on Etherscan (when --network sepolia)
  *   7. Saves deployed addresses to deployments/<network>.json
  *
@@ -72,7 +72,7 @@ async function main() {
   const isLocal = networkName === "localhost" || networkName === "hardhat";
 
   console.log("\n╔══════════════════════════════════════════════════════╗");
-  console.log("║           HamzaDEX — Deployment Script               ║");
+  console.log("║           ArcSwap — Deployment Script               ║");
   console.log("╚══════════════════════════════════════════════════════╝");
   console.log(`\n  Network  : ${networkName}`);
   console.log(`  Deployer : ${deployer.address}`);
@@ -89,18 +89,18 @@ async function main() {
   const block = await ethers.provider.getBlockNumber();
   deployments._blockNumber = block;
 
-  // ─── 1. Deploy HamzaToken (HAMZA) ───────────────────────────────
-  console.log("  [1/6] Deploying HamzaToken (HAMZA)...");
-  const HamzaToken = await ethers.getContractFactory("HamzaToken");
-  const hamzaToken = await HamzaToken.deploy("HamzaToken", "HAMZA", deployer.address);
-  await hamzaToken.waitForDeployment();
-  const hamzaAddress = await hamzaToken.getAddress();
-  deployments.HamzaToken = hamzaAddress;
-  console.log(`    ✓ HamzaToken (HAMZA) deployed at: ${hamzaAddress}`);
+  // ─── 1. Deploy ArcToken (ARC) ───────────────────────────────
+  console.log("  [1/6] Deploying ArcToken (ARC)...");
+  const ArcToken = await ethers.getContractFactory("ArcToken");
+  const arcToken = await ArcToken.deploy("ArcToken", "ARC", deployer.address);
+  await arcToken.waitForDeployment();
+  const arcAddress = await arcToken.getAddress();
+  deployments.ArcToken = arcAddress;
+  console.log(`    ✓ ArcToken (ARC) deployed at: ${arcAddress}`);
 
   // ─── 2. Deploy mock WETH ────────────────────────────────────────
   console.log("  [2/6] Deploying mock WETH...");
-  const wethToken = await HamzaToken.deploy("Wrapped Ether", "WETH", deployer.address);
+  const wethToken = await ArcToken.deploy("Wrapped Ether", "WETH", deployer.address);
   await wethToken.waitForDeployment();
   const wethAddress = await wethToken.getAddress();
   deployments.WETHToken = wethAddress;
@@ -108,49 +108,49 @@ async function main() {
 
   // ─── 3. Deploy mock USDC ────────────────────────────────────────
   console.log("  [3/6] Deploying mock USDC...");
-  const usdcToken = await HamzaToken.deploy("USD Coin", "USDC", deployer.address);
+  const usdcToken = await ArcToken.deploy("USD Coin", "USDC", deployer.address);
   await usdcToken.waitForDeployment();
   const usdcAddress = await usdcToken.getAddress();
   deployments.USDCToken = usdcAddress;
   console.log(`    ✓ USDC mock deployed at: ${usdcAddress}`);
 
-  // ─── 4. Deploy HamzaSwap Router ─────────────────────────────────
-  console.log("  [4/6] Deploying HamzaSwap router...");
-  const HamzaSwap = await ethers.getContractFactory("HamzaSwap");
-  const hamzaSwap = await HamzaSwap.deploy(deployer.address);
-  await hamzaSwap.waitForDeployment();
-  const swapAddress = await hamzaSwap.getAddress();
-  deployments.HamzaSwap = swapAddress;
-  console.log(`    ✓ HamzaSwap router deployed at: ${swapAddress}`);
+  // ─── 4. Deploy ArcSwap Router ─────────────────────────────────
+  console.log("  [4/6] Deploying ArcSwap router...");
+  const ArcSwap = await ethers.getContractFactory("ArcSwap");
+  const arcSwap = await ArcSwap.deploy(deployer.address);
+  await arcSwap.waitForDeployment();
+  const swapAddress = await arcSwap.getAddress();
+  deployments.ArcSwap = swapAddress;
+  console.log(`    ✓ ArcSwap router deployed at: ${swapAddress}`);
 
-  // ─── 5. Create HAMZA/WETH pair ───────────────────────────────────
-  console.log("  [5/6] Creating HAMZA/WETH pair...");
-  const tx1 = await hamzaSwap.createPair(hamzaAddress, wethAddress);
+  // ─── 5. Create ARC/WETH pair ───────────────────────────────────
+  console.log("  [5/6] Creating ARC/WETH pair...");
+  const tx1 = await arcSwap.createPair(arcAddress, wethAddress);
   const receipt1 = await tx1.wait();
   const pairCreatedEvent1 = receipt1.logs
-    .map((log) => { try { return hamzaSwap.interface.parseLog(log); } catch { return null; } })
+    .map((log) => { try { return arcSwap.interface.parseLog(log); } catch { return null; } })
     .find((e) => e && e.name === "PairCreated");
-  const hamzaWethPair = pairCreatedEvent1.args.pair;
-  deployments.HAMZAWETHPair = hamzaWethPair;
-  console.log(`    ✓ HAMZA/WETH pair: ${hamzaWethPair}`);
+  const arcWethPair = pairCreatedEvent1.args.pair;
+  deployments.ARCWETHPair = arcWethPair;
+  console.log(`    ✓ ARC/WETH pair: ${arcWethPair}`);
 
-  // ─── 6. Create HAMZA/USDC pair ───────────────────────────────────
-  console.log("  [6/6] Creating HAMZA/USDC pair...");
-  const tx2 = await hamzaSwap.createPair(hamzaAddress, usdcAddress);
+  // ─── 6. Create ARC/USDC pair ───────────────────────────────────
+  console.log("  [6/6] Creating ARC/USDC pair...");
+  const tx2 = await arcSwap.createPair(arcAddress, usdcAddress);
   const receipt2 = await tx2.wait();
   const pairCreatedEvent2 = receipt2.logs
-    .map((log) => { try { return hamzaSwap.interface.parseLog(log); } catch { return null; } })
+    .map((log) => { try { return arcSwap.interface.parseLog(log); } catch { return null; } })
     .find((e) => e && e.name === "PairCreated");
-  const hamzaUsdcPair = pairCreatedEvent2.args.pair;
-  deployments.HAMZAUSDCPair = hamzaUsdcPair;
-  console.log(`    ✓ HAMZA/USDC pair: ${hamzaUsdcPair}`);
+  const arcUsdcPair = pairCreatedEvent2.args.pair;
+  deployments.ARCUSDCPair = arcUsdcPair;
+  console.log(`    ✓ ARC/USDC pair: ${arcUsdcPair}`);
 
   // Also create WETH/USDC pair for multi-hop routing
   console.log("  [+] Creating WETH/USDC pair (for multi-hop)...");
-  const tx3 = await hamzaSwap.createPair(wethAddress, usdcAddress);
+  const tx3 = await arcSwap.createPair(wethAddress, usdcAddress);
   const receipt3 = await tx3.wait();
   const pairCreatedEvent3 = receipt3.logs
-    .map((log) => { try { return hamzaSwap.interface.parseLog(log); } catch { return null; } })
+    .map((log) => { try { return arcSwap.interface.parseLog(log); } catch { return null; } })
     .find((e) => e && e.name === "PairCreated");
   const wethUsdcPair = pairCreatedEvent3.args.pair;
   deployments.WETHUSDCPair = wethUsdcPair;
@@ -164,7 +164,7 @@ async function main() {
     console.log("\n  Waiting 30s for Etherscan to index contracts...");
     await sleep(30000);
 
-    await verifyContract(hamzaAddress, ["HamzaToken", "HAMZA", deployer.address]);
+    await verifyContract(arcAddress, ["ArcToken", "ARC", deployer.address]);
     await verifyContract(wethAddress,  ["Wrapped Ether", "WETH", deployer.address]);
     await verifyContract(usdcAddress,  ["USD Coin", "USDC", deployer.address]);
     await verifyContract(swapAddress,  [deployer.address]);
@@ -174,12 +174,12 @@ async function main() {
   console.log("\n╔══════════════════════════════════════════════════════╗");
   console.log("║                Deployment Summary                    ║");
   console.log("╚══════════════════════════════════════════════════════╝");
-  console.log(`  HamzaToken (HAMZA) : ${hamzaAddress}`);
+  console.log(`  ArcToken (ARC) : ${arcAddress}`);
   console.log(`  WETH (mock)        : ${wethAddress}`);
   console.log(`  USDC (mock)        : ${usdcAddress}`);
-  console.log(`  HamzaSwap Router   : ${swapAddress}`);
-  console.log(`  HAMZA/WETH Pair    : ${hamzaWethPair}`);
-  console.log(`  HAMZA/USDC Pair    : ${hamzaUsdcPair}`);
+  console.log(`  ArcSwap Router   : ${swapAddress}`);
+  console.log(`  ARC/WETH Pair    : ${arcWethPair}`);
+  console.log(`  ARC/USDC Pair    : ${arcUsdcPair}`);
   console.log(`  WETH/USDC Pair     : ${wethUsdcPair}`);
 
   if (isLocal) {

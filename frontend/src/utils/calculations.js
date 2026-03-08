@@ -18,7 +18,7 @@ export const WAD = 10n ** 18n;
 
 /**
  * Calculate output amount using constant product formula with 0.3% fee.
- * Mirrors: getAmountOut in HamzaSwap.sol
+ * Mirrors: getAmountOut in ArcSwap.sol
  *
  * Formula: amountOut = (amountIn * 997 * reserveOut) / (reserveIn * 1000 + amountIn * 997)
  *
@@ -39,7 +39,7 @@ export function getAmountOut(amountIn, reserveIn, reserveOut) {
 
 /**
  * Calculate required input for an exact output.
- * Mirrors: getAmountIn in HamzaSwap.sol
+ * Mirrors: getAmountIn in ArcSwap.sol
  *
  * Formula: amountIn = (reserveIn * amountOut * 1000) / ((reserveOut - amountOut) * 997) + 1
  *

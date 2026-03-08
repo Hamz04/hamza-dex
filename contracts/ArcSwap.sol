@@ -6,13 +6,13 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./LiquidityPool.sol";
-import "./interfaces/IHamzaSwap.sol";
+import "./interfaces/IArcSwap.sol";
 import "./interfaces/ILiquidityPool.sol";
 
 /**
- * @title HamzaSwap
- * @author Hamza Ahmad
- * @notice Core AMM router for HamzaDEX. Implements Uniswap V2-style constant product AMM.
+ * @title ArcSwap
+ * @author Hamzy
+ * @notice Core AMM router for ArcSwap. Implements Uniswap V2-style constant product AMM.
  *         Supports single-hop and multi-hop swaps, liquidity management, and price queries.
  *
  * AMM Formula:
@@ -22,7 +22,7 @@ import "./interfaces/ILiquidityPool.sol";
  *
  * @dev All token transfers use SafeERC20. Reentrancy protected. Deadline enforced on all state-changing calls.
  */
-contract HamzaSwap is IHamzaSwap, ReentrancyGuard, Ownable {
+contract ArcSwap is IArcSwap, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     // ─────────────────────────────────────────────────────────────
@@ -396,7 +396,7 @@ contract HamzaSwap is IHamzaSwap, ReentrancyGuard, Ownable {
         returns (uint256 price)
     {
         (uint256 reserveA, uint256 reserveB) = _getReserves(tokenA, tokenB);
-        require(reserveA > 0, "HamzaSwap: no liquidity");
+        require(reserveA > 0, "ArcSwap: no liquidity");
         price = (reserveB * 1e18) / reserveA;
     }
 
@@ -495,8 +495,8 @@ contract HamzaSwap is IHamzaSwap, ReentrancyGuard, Ownable {
         pure
         returns (uint256 amountB)
     {
-        require(amountA > 0, "HamzaSwap: insufficient amount");
-        require(reserveA > 0 && reserveB > 0, "HamzaSwap: insufficient liquidity");
+        require(amountA > 0, "ArcSwap: insufficient amount");
+        require(reserveA > 0 && reserveB > 0, "ArcSwap: insufficient liquidity");
         amountB = (amountA * reserveB) / reserveA;
     }
 

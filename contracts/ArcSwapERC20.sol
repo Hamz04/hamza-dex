@@ -2,11 +2,11 @@
 pragma solidity ^0.8.20;
 
 /**
- * @title HamzaSwapERC20
- * @dev LP token for HamzaSwap liquidity pairs. Minimal ERC-20 with permit support.
+ * @title ArcSwapERC20
+ * @dev LP token for ArcSwap liquidity pairs. Minimal ERC-20 with permit support.
  */
-contract HamzaSwapERC20 {
-    string public constant name = "HamzaSwap LP";
+contract ArcSwapERC20 {
+    string public constant name = "ArcSwap LP";
     string public constant symbol = "HSLP";
     uint8 public constant decimals = 18;
 
@@ -81,7 +81,7 @@ contract HamzaSwapERC20 {
         address owner, address spender, uint256 value,
         uint256 deadline, uint8 v, bytes32 r, bytes32 s
     ) external {
-        require(deadline >= block.timestamp, "HamzaSwap: EXPIRED");
+        require(deadline >= block.timestamp, "ArcSwap: EXPIRED");
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -90,7 +90,7 @@ contract HamzaSwapERC20 {
             )
         );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, "HamzaSwap: INVALID_SIGNATURE");
+        require(recoveredAddress != address(0) && recoveredAddress == owner, "ArcSwap: INVALID_SIGNATURE");
         _approve(owner, spender, value);
     }
 }

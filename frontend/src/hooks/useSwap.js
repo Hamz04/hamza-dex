@@ -1,6 +1,6 @@
 /**
  * useSwap.js
- * React hook for executing token swaps on HamzaDEX.
+ * React hook for executing token swaps on ArcSwap.
  * Handles quotes, approvals, and swap execution with status tracking.
  */
 
@@ -145,7 +145,7 @@ export function useSwap(wallet) {
       // Step 1: Approve token spending
       setStatus(TX_STATUS.APPROVING);
       const addresses  = getAddresses(wallet.chainId);
-      const routerAddr = addresses?.HamzaSwap;
+      const routerAddr = addresses?.ArcSwap;
       if (!routerAddr) throw new Error("Router not deployed on this network");
 
       const tokenIn  = getTokenContract(tokenInAddress, wallet.signer);

@@ -40,12 +40,12 @@ function sqrt(value) {
 async function deployPoolFixture() {
   const [owner, alice, bob, carol] = await ethers.getSigners();
 
-  const HamzaToken = await ethers.getContractFactory("HamzaToken");
-  const HamzaSwap  = await ethers.getContractFactory("HamzaSwap");
+  const ArcToken = await ethers.getContractFactory("ArcToken");
+  const ArcSwap  = await ethers.getContractFactory("ArcSwap");
 
-  const tokenA = await HamzaToken.deploy("Token A", "TKA", owner.address);
-  const tokenB = await HamzaToken.deploy("Token B", "TKB", owner.address);
-  const router = await HamzaSwap.deploy(owner.address);
+  const tokenA = await ArcToken.deploy("Token A", "TKA", owner.address);
+  const tokenB = await ArcToken.deploy("Token B", "TKB", owner.address);
+  const router = await ArcSwap.deploy(owner.address);
 
   const addrA = await tokenA.getAddress();
   const addrB = await tokenB.getAddress();
@@ -285,8 +285,8 @@ describe("LiquidityPool", function () {
       const aliceLP = await pool.balanceOf(alice.address);
       const totalSupply = await pool.totalSupply();
 
-      const tokenA = await ethers.getContractAt("HamzaToken", addrA);
-      const tokenB = await ethers.getContractAt("HamzaToken", addrB);
+      const tokenA = await ethers.getContractAt("ArcToken", addrA);
+      const tokenB = await ethers.getContractAt("ArcToken", addrB);
       const balABefore = await tokenA.balanceOf(alice.address);
       const balBBefore = await tokenB.balanceOf(alice.address);
 
@@ -431,7 +431,7 @@ describe("LiquidityPool", function () {
       );
 
       // Send tokens directly to pool (bypassing router) — creates imbalance
-      const tokenA = await ethers.getContractAt("HamzaToken", addrA);
+      const tokenA = await ethers.getContractAt("ArcToken", addrA);
       const pairAddr = await pool.getAddress();
       await tokenA.connect(alice).transfer(pairAddr, ethers.parseEther("1000"));
 
@@ -593,8 +593,8 @@ describe("LiquidityPool", function () {
       // Use a large but realistic amount: 1 billion tokens
       const large = ethers.parseEther("1000000000");
 
-      const tokenA = await ethers.getContractAt("HamzaToken", addrA);
-      const tokenB = await ethers.getContractAt("HamzaToken", addrB);
+      const tokenA = await ethers.getContractAt("ArcToken", addrA);
+      const tokenB = await ethers.getContractAt("ArcToken", addrB);
       await tokenA.mint(alice.address, large);
       await tokenB.mint(alice.address, large);
 

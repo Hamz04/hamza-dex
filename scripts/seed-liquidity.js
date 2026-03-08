@@ -1,10 +1,10 @@
 /**
- * HamzaDEX Seed Liquidity Script
+ * ArcSwap Seed Liquidity Script
  * ─────────────────────────────────────────────────────────────────
  * Reads deployed contract addresses from deployments/<network>.json
  * and seeds initial liquidity into all three pools:
- *   • HAMZA/WETH  — 100,000 HAMZA : 50 WETH  (price: 2000 HAMZA/WETH)
- *   • HAMZA/USDC  — 100,000 HAMZA : 200,000 USDC (price: 2 USDC/HAMZA)
+ *   • ARC/WETH  — 100,000 ARC : 50 WETH  (price: 2000 ARC/WETH)
+ *   • ARC/USDC  — 100,000 ARC : 200,000 USDC (price: 2 USDC/ARC)
  *   • WETH/USDC   — 50 WETH : 100,000 USDC (price: 2000 USDC/WETH)
  *
  * Usage:
@@ -21,13 +21,13 @@ const path = require("path");
 // ─────────────────────────────────────────────────────────────────
 
 const LIQUIDITY_CONFIG = {
-  "HAMZA/WETH": {
-    amountA: ethers.parseEther("100000"), // 100,000 HAMZA
-    amountB: ethers.parseEther("50"),     // 50 WETH  → 1 WETH = 2,000 HAMZA
+  "ARC/WETH": {
+    amountA: ethers.parseEther("100000"), // 100,000 ARC
+    amountB: ethers.parseEther("50"),     // 50 WETH  → 1 WETH = 2,000 ARC
   },
-  "HAMZA/USDC": {
-    amountA: ethers.parseEther("100000"), // 100,000 HAMZA
-    amountB: ethers.parseEther("200000"), // 200,000 USDC → 1 HAMZA = 2 USDC
+  "ARC/USDC": {
+    amountA: ethers.parseEther("100000"), // 100,000 ARC
+    amountB: ethers.parseEther("200000"), // 200,000 USDC → 1 ARC = 2 USDC
   },
   "WETH/USDC": {
     amountA: ethers.parseEther("50"),     // 50 WETH
@@ -56,7 +56,7 @@ function deadline() {
 }
 
 async function approveToken(token, spender, amount, signer) {
-  const tokenContract = await ethers.getContractAt("HamzaToken", token, signer);
+  const tokenContract = await ethers.getContractAt("ArcToken", token, signer);
   const symbol = await tokenContract.symbol();
   const current = await tokenContract.allowance(signer.address, spender);
 
@@ -71,7 +71,7 @@ async function approveToken(token, spender, amount, signer) {
 }
 
 async function mintIfNeeded(token, to, amount, signer) {
-  const tokenContract = await ethers.getContractAt("HamzaToken", token, signer);
+  const tokenContract = await ethers.getContractAt("ArcToken", token, signer);
   const symbol = await tokenContract.symbol();
   const balance = await tokenContract.balanceOf(to);
 
@@ -95,7 +95,7 @@ async function main() {
   const networkName = network.name;
 
   console.log("\n╔══════════════════════════════════════════════════════╗");
-  console.log("║         HamzaDEX — Seed Liquidity Script             ║");
+  console.log("║         ArcSwap — Seed Liquidity Script             ║");
   console.log("╚══════════════════════════════════════════════════════╝");
   console.log(`\n  Network  : ${networkName}`);
   console.log(`  Provider : ${deployer.address}\n`);
@@ -103,43 +103,43 @@ async function main() {
   // ─── Load deployed addresses ──────────────────────────────────
   const deployments = loadDeployments(networkName);
   const {
-    HamzaToken: hamzaAddress,
+    ArcToken: arcAddress,
     WETHToken: wethAddress,
     USDCToken: usdcAddress,
-    HamzaSwap: swapAddress,
+    ArcSwap: swapAddress,
   } = deployments;
 
   console.log("  Loaded deployment addresses:");
-  console.log(`    HAMZA    : ${hamzaAddress}`);
+  console.log(`    ARC    : ${arcAddress}`);
   console.log(`    WETH     : ${wethAddress}`);
   console.log(`    USDC     : ${usdcAddress}`);
   console.log(`    Router   : ${swapAddress}\n`);
 
   // ─── Connect to router ────────────────────────────────────────
-  const router = await ethers.getContractAt("HamzaSwap", swapAddress, deployer);
+  const router = await ethers.getContractAt("ArcSwap", swapAddress, deployer);
 
   // ─── Ensure sufficient token balances ────────────────────────
   console.log("  [1/4] Ensuring token balances...");
-  const totalHamza = LIQUIDITY_CONFIG["HAMZA/WETH"].amountA + LIQUIDITY_CONFIG["HAMZA/USDC"].amountA;
-  const totalWeth  = LIQUIDITY_CONFIG["HAMZA/WETH"].amountB + LIQUIDITY_CONFIG["WETH/USDC"].amountA;
-  const totalUsdc  = LIQUIDITY_CONFIG["HAMZA/USDC"].amountB + LIQUIDITY_CONFIG["WETH/USDC"].amountB;
+  const totalArc = LIQUIDITY_CONFIG["ARC/WETH"].amountA + LIQUIDITY_CONFIG["ARC/USDC"].amountA;
+  const totalWeth  = LIQUIDITY_CONFIG["ARC/WETH"].amountB + LIQUIDITY_CONFIG["WETH/USDC"].amountA;
+  const totalUsdc  = LIQUIDITY_CONFIG["ARC/USDC"].amountB + LIQUIDITY_CONFIG["WETH/USDC"].amountB;
 
-  await mintIfNeeded(hamzaAddress, deployer.address, totalHamza, deployer);
+  await mintIfNeeded(arcAddress, deployer.address, totalArc, deployer);
   await mintIfNeeded(wethAddress,  deployer.address, totalWeth,  deployer);
   await mintIfNeeded(usdcAddress,  deployer.address, totalUsdc,  deployer);
 
   // ─── Approve router to spend all tokens ──────────────────────
   console.log("\n  [2/4] Approving router...");
-  await approveToken(hamzaAddress, swapAddress, totalHamza, deployer);
+  await approveToken(arcAddress, swapAddress, totalArc, deployer);
   await approveToken(wethAddress,  swapAddress, totalWeth,  deployer);
   await approveToken(usdcAddress,  swapAddress, totalUsdc,  deployer);
 
-  // ─── Seed HAMZA/WETH pool ─────────────────────────────────────
-  console.log("\n  [3/4] Seeding HAMZA/WETH pool...");
+  // ─── Seed ARC/WETH pool ─────────────────────────────────────
+  console.log("\n  [3/4] Seeding ARC/WETH pool...");
   {
-    const { amountA, amountB } = LIQUIDITY_CONFIG["HAMZA/WETH"];
+    const { amountA, amountB } = LIQUIDITY_CONFIG["ARC/WETH"];
     const tx = await router.addLiquidity(
-      hamzaAddress,
+      arcAddress,
       wethAddress,
       amountA,
       amountB,
@@ -155,22 +155,22 @@ async function main() {
       .find((e) => e && e.name === "LiquidityAdded");
 
     if (event) {
-      console.log(`    ✓ Added ${ethers.formatEther(event.args.amountA)} HAMZA`);
+      console.log(`    ✓ Added ${ethers.formatEther(event.args.amountA)} ARC`);
       console.log(`    ✓ Added ${ethers.formatEther(event.args.amountB)} WETH`);
       console.log(`    ✓ LP tokens minted: ${ethers.formatEther(event.args.liquidity)}`);
     }
 
     // Verify price
-    const price = await router.getPrice(hamzaAddress, wethAddress);
-    console.log(`    ✓ HAMZA/WETH spot price: ${ethers.formatEther(price)} WETH per HAMZA`);
+    const price = await router.getPrice(arcAddress, wethAddress);
+    console.log(`    ✓ ARC/WETH spot price: ${ethers.formatEther(price)} WETH per ARC`);
   }
 
-  // ─── Seed HAMZA/USDC pool ─────────────────────────────────────
-  console.log("\n  [4/4] Seeding HAMZA/USDC pool...");
+  // ─── Seed ARC/USDC pool ─────────────────────────────────────
+  console.log("\n  [4/4] Seeding ARC/USDC pool...");
   {
-    const { amountA, amountB } = LIQUIDITY_CONFIG["HAMZA/USDC"];
+    const { amountA, amountB } = LIQUIDITY_CONFIG["ARC/USDC"];
     const tx = await router.addLiquidity(
-      hamzaAddress,
+      arcAddress,
       usdcAddress,
       amountA,
       amountB,
@@ -186,13 +186,13 @@ async function main() {
       .find((e) => e && e.name === "LiquidityAdded");
 
     if (event) {
-      console.log(`    ✓ Added ${ethers.formatEther(event.args.amountA)} HAMZA`);
+      console.log(`    ✓ Added ${ethers.formatEther(event.args.amountA)} ARC`);
       console.log(`    ✓ Added ${ethers.formatEther(event.args.amountB)} USDC`);
       console.log(`    ✓ LP tokens minted: ${ethers.formatEther(event.args.liquidity)}`);
     }
 
-    const price = await router.getPrice(hamzaAddress, usdcAddress);
-    console.log(`    ✓ HAMZA/USDC spot price: ${ethers.formatEther(price)} USDC per HAMZA`);
+    const price = await router.getPrice(arcAddress, usdcAddress);
+    console.log(`    ✓ ARC/USDC spot price: ${ethers.formatEther(price)} USDC per ARC`);
   }
 
   // ─── Seed WETH/USDC pool ──────────────────────────────────────
@@ -216,22 +216,22 @@ async function main() {
   }
 
   // ─── Verify multi-hop route quote ─────────────────────────────
-  console.log("\n  Verifying multi-hop quote (HAMZA -> WETH -> USDC)...");
-  const testAmountIn = ethers.parseEther("1000"); // 1000 HAMZA
+  console.log("\n  Verifying multi-hop quote (ARC -> WETH -> USDC)...");
+  const testAmountIn = ethers.parseEther("1000"); // 1000 ARC
   const [, , outUsdc] = await router.getAmountsOut(testAmountIn, [
-    hamzaAddress,
+    arcAddress,
     wethAddress,
     usdcAddress,
   ]);
-  console.log(`    ✓ 1,000 HAMZA → WETH → ~${ethers.formatEther(outUsdc)} USDC`);
+  console.log(`    ✓ 1,000 ARC → WETH → ~${ethers.formatEther(outUsdc)} USDC`);
 
   // ─── Update deployments file with seed info ────────────────────
   const depFile = path.join(__dirname, "..", "deployments", `${networkName}.json`);
   const deps = JSON.parse(fs.readFileSync(depFile, "utf8"));
   deps.seededAt = new Date().toISOString();
   deps.initialPrices = {
-    "HAMZA/WETH": "0.0005 WETH per HAMZA (2000 HAMZA per WETH)",
-    "HAMZA/USDC": "2 USDC per HAMZA",
+    "ARC/WETH": "0.0005 WETH per ARC (2000 ARC per WETH)",
+    "ARC/USDC": "2 USDC per ARC",
     "WETH/USDC": "2000 USDC per WETH",
   };
   fs.writeFileSync(depFile, JSON.stringify(deps, null, 2));

@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 /**
  * @title ILiquidityPool
- * @notice Interface for a HamzaDEX constant-product liquidity pool.
+ * @notice Interface for a ArcSwap constant-product liquidity pool.
  *         Implemented by LiquidityPool.sol.
  */
 interface ILiquidityPool {

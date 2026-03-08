@@ -1,5 +1,5 @@
 {
-  "name": "hamza-dex",
+  "name": "arc-swap",
   "version": "1.0.0",
   "description": "Production-quality AMM DEX with constant product formula, LP tokens, and React frontend",
   "scripts": {

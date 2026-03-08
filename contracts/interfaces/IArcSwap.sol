@@ -2,11 +2,11 @@
 pragma solidity ^0.8.20;
 
 /**
- * @title IHamzaSwap
- * @notice Interface for the HamzaSwap AMM router.
- *         Implemented by HamzaSwap.sol.
+ * @title IArcSwap
+ * @notice Interface for the ArcSwap AMM router.
+ *         Implemented by ArcSwap.sol.
  */
-interface IHamzaSwap {
+interface IArcSwap {
     // ─────────────────────────────────────────────────────────────
     // Events
     // ─────────────────────────────────────────────────────────────

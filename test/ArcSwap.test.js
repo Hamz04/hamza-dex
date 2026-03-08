@@ -1,7 +1,7 @@
 /**
- * HamzaSwap.test.js
+ * ArcSwap.test.js
  * ─────────────────────────────────────────────────────────────────
- * Comprehensive tests for the HamzaSwap AMM router:
+ * Comprehensive tests for the ArcSwap AMM router:
  *   - Swap math (constant product formula verification)
  *   - Fee calculation (0.3%)
  *   - Slippage protection (amountOutMin)
@@ -53,15 +53,15 @@ function calcExpectedIn(amountOut, reserveIn, reserveOut) {
 async function deployDEXFixture() {
   const [owner, alice, bob, carol] = await ethers.getSigners();
 
-  const HamzaToken = await ethers.getContractFactory("HamzaToken");
-  const HamzaSwap  = await ethers.getContractFactory("HamzaSwap");
+  const ArcToken = await ethers.getContractFactory("ArcToken");
+  const ArcSwap  = await ethers.getContractFactory("ArcSwap");
 
   // Deploy three tokens
-  const tokenA = await HamzaToken.deploy("Token A", "TKA", owner.address);
-  const tokenB = await HamzaToken.deploy("Token B", "TKB", owner.address);
-  const tokenC = await HamzaToken.deploy("Token C", "TKC", owner.address);
+  const tokenA = await ArcToken.deploy("Token A", "TKA", owner.address);
+  const tokenB = await ArcToken.deploy("Token B", "TKB", owner.address);
+  const tokenC = await ArcToken.deploy("Token C", "TKC", owner.address);
 
-  const router = await HamzaSwap.deploy(owner.address);
+  const router = await ArcSwap.deploy(owner.address);
 
   const addrA = await tokenA.getAddress();
   const addrB = await tokenB.getAddress();
@@ -133,7 +133,7 @@ async function deployDEXFixture() {
 // Test Suite
 // ─────────────────────────────────────────────────────────────────
 
-describe("HamzaSwap", function () {
+describe("ArcSwap", function () {
 
   // ───────────────────────────────────────────────────────────────
   // 1. Pair Management
@@ -169,11 +169,11 @@ describe("HamzaSwap", function () {
 
     it("should emit PairCreated event with correct args", async function () {
       const [owner] = await ethers.getSigners();
-      const HamzaToken = await ethers.getContractFactory("HamzaToken");
-      const HamzaSwap  = await ethers.getContractFactory("HamzaSwap");
-      const t1 = await HamzaToken.deploy("T1", "T1", owner.address);
-      const t2 = await HamzaToken.deploy("T2", "T2", owner.address);
-      const r  = await HamzaSwap.deploy(owner.address);
+      const ArcToken = await ethers.getContractFactory("ArcToken");
+      const ArcSwap  = await ethers.getContractFactory("ArcSwap");
+      const t1 = await ArcToken.deploy("T1", "T1", owner.address);
+      const t2 = await ArcToken.deploy("T2", "T2", owner.address);
+      const r  = await ArcSwap.deploy(owner.address);
       const addr1 = await t1.getAddress();
       const addr2 = await t2.getAddress();
       const tx = await r.createPair(addr1, addr2);
@@ -304,7 +304,7 @@ describe("HamzaSwap", function () {
       const { router, bob, addrA, addrB, seedA, seedB } = await loadFixture(deployDEXFixture);
       const amountIn = ethers.parseEther("500");
 
-      const tokenB = await ethers.getContractAt("HamzaToken", addrB);
+      const tokenB = await ethers.getContractAt("ArcToken", addrB);
       const balBefore = await tokenB.balanceOf(bob.address);
 
       const amounts = await router.getAmountsOut(amountIn, [addrA, addrB]);
@@ -319,7 +319,7 @@ describe("HamzaSwap", function () {
     it("should deduct correct input amount from sender", async function () {
       const { router, bob, addrA, addrB } = await loadFixture(deployDEXFixture);
       const amountIn = ethers.parseEther("500");
-      const tokenA = await ethers.getContractAt("HamzaToken", addrA);
+      const tokenA = await ethers.getContractAt("ArcToken", addrA);
       const balBefore = await tokenA.balanceOf(bob.address);
 
       await router.connect(bob).swapExactTokensForTokens(
@@ -411,7 +411,7 @@ describe("HamzaSwap", function () {
 
     it("swapTokensForExactTokens should give exact output", async function () {
       const { router, bob, addrA, addrB } = await loadFixture(deployDEXFixture);
-      const tokenB = await ethers.getContractAt("HamzaToken", addrB);
+      const tokenB = await ethers.getContractAt("ArcToken", addrB);
       const amountOut = ethers.parseEther("500");
       const balBefore = await tokenB.balanceOf(bob.address);
 
@@ -499,7 +499,7 @@ describe("HamzaSwap", function () {
   describe("Multi-Hop Routing", function () {
     it("should execute 3-token swap: A -> B -> C", async function () {
       const { router, bob, addrA, addrB, addrC } = await loadFixture(deployDEXFixture);
-      const tokenC = await ethers.getContractAt("HamzaToken", addrC);
+      const tokenC = await ethers.getContractAt("ArcToken", addrC);
       const balBefore = await tokenC.balanceOf(bob.address);
 
       const amountIn = ethers.parseEther("1000");
@@ -538,7 +538,7 @@ describe("HamzaSwap", function () {
 
     it("should correctly route: A -> B -> C -> A (triangle arbitrage path)", async function () {
       const { router, bob, addrA, addrB, addrC } = await loadFixture(deployDEXFixture);
-      const tokenA = await ethers.getContractAt("HamzaToken", addrA);
+      const tokenA = await ethers.getContractAt("ArcToken", addrA);
       const amountIn = ethers.parseEther("100");
 
       const amounts = await router.getAmountsOut(amountIn, [addrA, addrB, addrC, addrA]);
@@ -581,11 +581,11 @@ describe("HamzaSwap", function () {
 
     it("getPrice should revert for non-existent pair", async function () {
       const [owner] = await ethers.getSigners();
-      const HamzaToken = await ethers.getContractFactory("HamzaToken");
-      const HamzaSwap  = await ethers.getContractFactory("HamzaSwap");
-      const t1 = await HamzaToken.deploy("T1", "T1", owner.address);
-      const t2 = await HamzaToken.deploy("T2", "T2", owner.address);
-      const r  = await HamzaSwap.deploy(owner.address);
+      const ArcToken = await ethers.getContractFactory("ArcToken");
+      const ArcSwap  = await ethers.getContractFactory("ArcSwap");
+      const t1 = await ArcToken.deploy("T1", "T1", owner.address);
+      const t2 = await ArcToken.deploy("T2", "T2", owner.address);
+      const r  = await ArcSwap.deploy(owner.address);
       await expect(r.getPrice(await t1.getAddress(), await t2.getAddress())).to.be.reverted;
     });
   });
@@ -612,11 +612,11 @@ describe("HamzaSwap", function () {
 
     it("addLiquidity to new pair should create it automatically", async function () {
       const [owner, alice] = await ethers.getSigners();
-      const HamzaToken = await ethers.getContractFactory("HamzaToken");
-      const HamzaSwap  = await ethers.getContractFactory("HamzaSwap");
-      const t1 = await HamzaToken.deploy("T1", "T1", owner.address);
-      const t2 = await HamzaToken.deploy("T2", "T2", owner.address);
-      const r  = await HamzaSwap.deploy(owner.address);
+      const ArcToken = await ethers.getContractFactory("ArcToken");
+      const ArcSwap  = await ethers.getContractFactory("ArcSwap");
+      const t1 = await ArcToken.deploy("T1", "T1", owner.address);
+      const t2 = await ArcToken.deploy("T2", "T2", owner.address);
+      const r  = await ArcSwap.deploy(owner.address);
       const a1 = await t1.getAddress();
       const a2 = await t2.getAddress();
       const ra = await r.getAddress();

@@ -13,12 +13,12 @@ interface IWETH {
     function approve(address spender, uint256 amount) external returns (bool);
 }
 
-interface IHamzaFactory {
+interface IArcFactory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
     function createPair(address tokenA, address tokenB) external returns (address pair);
 }
 
-interface IHamzaPool {
+interface IArcPool {
     function tokenA() external view returns (address);
     function tokenB() external view returns (address);
     function getReserves() external view returns (uint256 reserveA, uint256 reserveB);
@@ -31,28 +31,28 @@ interface IHamzaPool {
 
 // ─── Custom Errors ────────────────────────────────────────────────────────────
 
-error HamzaRouter__Expired();
-error HamzaRouter__InsufficientOutputAmount();
-error HamzaRouter__InsufficientAAmount();
-error HamzaRouter__InsufficientBAmount();
-error HamzaRouter__InvalidPath();
-error HamzaRouter__ExcessiveInputAmount();
-error HamzaRouter__ETHTransferFailed();
-error HamzaRouter__OnlyWETH();
-error HamzaRouter__InsufficientLiquidity();
-error HamzaRouter__PairNotFound();
+error ArcRouter__Expired();
+error ArcRouter__InsufficientOutputAmount();
+error ArcRouter__InsufficientAAmount();
+error ArcRouter__InsufficientBAmount();
+error ArcRouter__InvalidPath();
+error ArcRouter__ExcessiveInputAmount();
+error ArcRouter__ETHTransferFailed();
+error ArcRouter__OnlyWETH();
+error ArcRouter__InsufficientLiquidity();
+error ArcRouter__PairNotFound();
 
 // ─── Events ───────────────────────────────────────────────────────────────────
 
 // (emitted by the pool, declared here for indexer convenience)
 
 /**
- * @title HamzaSwapRouterV2
+ * @title ArcSwapRouterV2
  * @notice AMM router with full ETH wrapping support and Flashbots-friendly design.
  *         All swap functions apply a 997/1000 (0.3%) fee via the pool's reserve math.
  *         Re-entrancy is guarded on all state-modifying functions.
  */
-contract HamzaSwapRouterV2 is ReentrancyGuard {
+contract ArcSwapRouterV2 is ReentrancyGuard {
 
     // ── Immutables ─────────────────────────────────────────────────────────────
     address public immutable factory;
@@ -60,7 +60,7 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
 
     // ── Modifiers ──────────────────────────────────────────────────────────────
     modifier ensure(uint256 deadline) {
-        if (block.timestamp > deadline) revert HamzaRouter__Expired();
+        if (block.timestamp > deadline) revert ArcRouter__Expired();
         _;
     }
 
@@ -72,7 +72,7 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
 
     // ── Receive (only WETH unwrap) ─────────────────────────────────────────────
     receive() external payable {
-        if (msg.sender != WETH) revert HamzaRouter__OnlyWETH();
+        if (msg.sender != WETH) revert ArcRouter__OnlyWETH();
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -80,8 +80,8 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
     // ══════════════════════════════════════════════════════════════════════════
 
     function _getPair(address tokenA, address tokenB) internal view returns (address pair) {
-        pair = IHamzaFactory(factory).getPair(tokenA, tokenB);
-        if (pair == address(0)) revert HamzaRouter__PairNotFound();
+        pair = IArcFactory(factory).getPair(tokenA, tokenB);
+        if (pair == address(0)) revert ArcRouter__PairNotFound();
     }
 
     function _getReserves(
@@ -89,8 +89,8 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         address tokenB
     ) internal view returns (uint256 reserveA, uint256 reserveB, address pair) {
         pair = _getPair(tokenA, tokenB);
-        (uint256 r0, uint256 r1) = IHamzaPool(pair).getReserves();
-        address t0 = IHamzaPool(pair).tokenA();
+        (uint256 r0, uint256 r1) = IArcPool(pair).getReserves();
+        address t0 = IArcPool(pair).tokenA();
         (reserveA, reserveB) = tokenA == t0 ? (r0, r1) : (r1, r0);
     }
 
@@ -102,7 +102,7 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
-        if (reserveIn == 0 || reserveOut == 0) revert HamzaRouter__InsufficientLiquidity();
+        if (reserveIn == 0 || reserveOut == 0) revert ArcRouter__InsufficientLiquidity();
         uint256 amountInWithFee = amountIn * 997;
         uint256 numerator = amountInWithFee * reserveOut;
         uint256 denominator = reserveIn * 1000 + amountInWithFee;
@@ -117,8 +117,8 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountIn) {
-        if (reserveIn == 0 || reserveOut == 0) revert HamzaRouter__InsufficientLiquidity();
-        if (amountOut >= reserveOut) revert HamzaRouter__InsufficientLiquidity();
+        if (reserveIn == 0 || reserveOut == 0) revert ArcRouter__InsufficientLiquidity();
+        if (amountOut >= reserveOut) revert ArcRouter__InsufficientLiquidity();
         uint256 numerator = reserveIn * amountOut * 1000;
         uint256 denominator = (reserveOut - amountOut) * 997;
         amountIn = numerator / denominator + 1;
@@ -143,8 +143,8 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         uint256 reserveA,
         uint256 reserveB
     ) internal pure returns (uint256 amountB) {
-        if (amountA == 0) revert HamzaRouter__InsufficientOutputAmount();
-        if (reserveA == 0 || reserveB == 0) revert HamzaRouter__InsufficientLiquidity();
+        if (amountA == 0) revert ArcRouter__InsufficientOutputAmount();
+        if (reserveA == 0 || reserveB == 0) revert ArcRouter__InsufficientLiquidity();
         amountB = (amountA * reserveB) / reserveA;
     }
 
@@ -160,9 +160,9 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         uint256 amountAMin,
         uint256 amountBMin
     ) internal returns (uint256 amountA, uint256 amountB, address pair) {
-        pair = IHamzaFactory(factory).getPair(tokenA, tokenB);
+        pair = IArcFactory(factory).getPair(tokenA, tokenB);
         if (pair == address(0)) {
-            pair = IHamzaFactory(factory).createPair(tokenA, tokenB);
+            pair = IArcFactory(factory).createPair(tokenA, tokenB);
         }
 
         (uint256 reserveA, uint256 reserveB,) = _getReserves(tokenA, tokenB);
@@ -172,12 +172,12 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         } else {
             uint256 amountBOptimal = _quote(amountADesired, reserveA, reserveB);
             if (amountBOptimal <= amountBDesired) {
-                if (amountBOptimal < amountBMin) revert HamzaRouter__InsufficientBAmount();
+                if (amountBOptimal < amountBMin) revert ArcRouter__InsufficientBAmount();
                 (amountA, amountB) = (amountADesired, amountBOptimal);
             } else {
                 uint256 amountAOptimal = _quote(amountBDesired, reserveB, reserveA);
-                if (amountAOptimal > amountADesired) revert HamzaRouter__InsufficientAAmount();
-                if (amountAOptimal < amountAMin) revert HamzaRouter__InsufficientAAmount();
+                if (amountAOptimal > amountADesired) revert ArcRouter__InsufficientAAmount();
+                if (amountAOptimal < amountAMin) revert ArcRouter__InsufficientAAmount();
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
             }
         }
@@ -197,7 +197,7 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         (amountA, amountB, pair) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
         _safeTransferFrom(tokenA, msg.sender, pair, amountA);
         _safeTransferFrom(tokenB, msg.sender, pair, amountB);
-        liquidity = IHamzaPool(pair).mint(to);
+        liquidity = IArcPool(pair).mint(to);
     }
 
     function addLiquidityETH(
@@ -215,12 +215,12 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         _safeTransferFrom(token, msg.sender, pair, amountToken);
         IWETH(WETH).deposit{value: amountETH}();
         IWETH(WETH).transfer(pair, amountETH);
-        liquidity = IHamzaPool(pair).mint(to);
+        liquidity = IArcPool(pair).mint(to);
 
         // Refund excess ETH
         if (msg.value > amountETH) {
             (bool ok,) = msg.sender.call{value: msg.value - amountETH}("");
-            if (!ok) revert HamzaRouter__ETHTransferFailed();
+            if (!ok) revert ArcRouter__ETHTransferFailed();
         }
     }
 
@@ -238,12 +238,12 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         uint256 deadline
     ) public ensure(deadline) nonReentrant returns (uint256 amountA, uint256 amountB) {
         address pair = _getPair(tokenA, tokenB);
-        IHamzaPool(pair).transferFrom(msg.sender, pair, liquidity);
-        (uint256 amount0, uint256 amount1) = IHamzaPool(pair).burn(to);
-        address t0 = IHamzaPool(pair).tokenA();
+        IArcPool(pair).transferFrom(msg.sender, pair, liquidity);
+        (uint256 amount0, uint256 amount1) = IArcPool(pair).burn(to);
+        address t0 = IArcPool(pair).tokenA();
         (amountA, amountB) = tokenA == t0 ? (amount0, amount1) : (amount1, amount0);
-        if (amountA < amountAMin) revert HamzaRouter__InsufficientAAmount();
-        if (amountB < amountBMin) revert HamzaRouter__InsufficientBAmount();
+        if (amountA < amountAMin) revert ArcRouter__InsufficientAAmount();
+        if (amountB < amountBMin) revert ArcRouter__InsufficientBAmount();
     }
 
     function removeLiquidityETH(
@@ -260,7 +260,7 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         _safeTransfer(token, to, amountToken);
         IWETH(WETH).withdraw(amountETH);
         (bool ok,) = to.call{value: amountETH}("");
-        if (!ok) revert HamzaRouter__ETHTransferFailed();
+        if (!ok) revert ArcRouter__ETHTransferFailed();
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -271,13 +271,13 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         for (uint256 i = 0; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             address pair = _getPair(input, output);
-            address t0 = IHamzaPool(pair).tokenA();
+            address t0 = IArcPool(pair).tokenA();
             uint256 amountOut = amounts[i + 1];
             (uint256 amount0Out, uint256 amount1Out) = input == t0
                 ? (uint256(0), amountOut)
                 : (amountOut, uint256(0));
             address to = i < path.length - 2 ? _getPair(output, path[i + 2]) : _to;
-            IHamzaPool(pair).swap(amount0Out, amount1Out, to);
+            IArcPool(pair).swap(amount0Out, amount1Out, to);
         }
     }
 
@@ -288,9 +288,9 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         address to,
         uint256 deadline
     ) external ensure(deadline) nonReentrant returns (uint256[] memory amounts) {
-        if (path.length < 2) revert HamzaRouter__InvalidPath();
+        if (path.length < 2) revert ArcRouter__InvalidPath();
         amounts = _getAmountsOut(amountIn, path);
-        if (amounts[amounts.length - 1] < amountOutMin) revert HamzaRouter__InsufficientOutputAmount();
+        if (amounts[amounts.length - 1] < amountOutMin) revert ArcRouter__InsufficientOutputAmount();
         _safeTransferFrom(path[0], msg.sender, _getPair(path[0], path[1]), amounts[0]);
         _swap(amounts, path, to);
     }
@@ -302,9 +302,9 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         address to,
         uint256 deadline
     ) external ensure(deadline) nonReentrant returns (uint256[] memory amounts) {
-        if (path.length < 2) revert HamzaRouter__InvalidPath();
+        if (path.length < 2) revert ArcRouter__InvalidPath();
         amounts = _getAmountsIn(amountOut, path);
-        if (amounts[0] > amountInMax) revert HamzaRouter__ExcessiveInputAmount();
+        if (amounts[0] > amountInMax) revert ArcRouter__ExcessiveInputAmount();
         _safeTransferFrom(path[0], msg.sender, _getPair(path[0], path[1]), amounts[0]);
         _swap(amounts, path, to);
     }
@@ -319,9 +319,9 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         address to,
         uint256 deadline
     ) external payable ensure(deadline) nonReentrant returns (uint256[] memory amounts) {
-        if (path.length < 2 || path[0] != WETH) revert HamzaRouter__InvalidPath();
+        if (path.length < 2 || path[0] != WETH) revert ArcRouter__InvalidPath();
         amounts = _getAmountsOut(msg.value, path);
-        if (amounts[amounts.length - 1] < amountOutMin) revert HamzaRouter__InsufficientOutputAmount();
+        if (amounts[amounts.length - 1] < amountOutMin) revert ArcRouter__InsufficientOutputAmount();
         IWETH(WETH).deposit{value: amounts[0]}();
         IWETH(WETH).transfer(_getPair(path[0], path[1]), amounts[0]);
         _swap(amounts, path, to);
@@ -334,14 +334,14 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         address to,
         uint256 deadline
     ) external ensure(deadline) nonReentrant returns (uint256[] memory amounts) {
-        if (path.length < 2 || path[path.length - 1] != WETH) revert HamzaRouter__InvalidPath();
+        if (path.length < 2 || path[path.length - 1] != WETH) revert ArcRouter__InvalidPath();
         amounts = _getAmountsIn(amountOut, path);
-        if (amounts[0] > amountInMax) revert HamzaRouter__ExcessiveInputAmount();
+        if (amounts[0] > amountInMax) revert ArcRouter__ExcessiveInputAmount();
         _safeTransferFrom(path[0], msg.sender, _getPair(path[0], path[1]), amounts[0]);
         _swap(amounts, path, address(this));
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
         (bool ok,) = to.call{value: amounts[amounts.length - 1]}("");
-        if (!ok) revert HamzaRouter__ETHTransferFailed();
+        if (!ok) revert ArcRouter__ETHTransferFailed();
     }
 
     function swapExactTokensForETH(
@@ -351,14 +351,14 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         address to,
         uint256 deadline
     ) external ensure(deadline) nonReentrant returns (uint256[] memory amounts) {
-        if (path.length < 2 || path[path.length - 1] != WETH) revert HamzaRouter__InvalidPath();
+        if (path.length < 2 || path[path.length - 1] != WETH) revert ArcRouter__InvalidPath();
         amounts = _getAmountsOut(amountIn, path);
-        if (amounts[amounts.length - 1] < amountOutMin) revert HamzaRouter__InsufficientOutputAmount();
+        if (amounts[amounts.length - 1] < amountOutMin) revert ArcRouter__InsufficientOutputAmount();
         _safeTransferFrom(path[0], msg.sender, _getPair(path[0], path[1]), amounts[0]);
         _swap(amounts, path, address(this));
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
         (bool ok,) = to.call{value: amounts[amounts.length - 1]}("");
-        if (!ok) revert HamzaRouter__ETHTransferFailed();
+        if (!ok) revert ArcRouter__ETHTransferFailed();
     }
 
     function swapETHForExactTokens(
@@ -367,16 +367,16 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
         address to,
         uint256 deadline
     ) external payable ensure(deadline) nonReentrant returns (uint256[] memory amounts) {
-        if (path.length < 2 || path[0] != WETH) revert HamzaRouter__InvalidPath();
+        if (path.length < 2 || path[0] != WETH) revert ArcRouter__InvalidPath();
         amounts = _getAmountsIn(amountOut, path);
-        if (amounts[0] > msg.value) revert HamzaRouter__ExcessiveInputAmount();
+        if (amounts[0] > msg.value) revert ArcRouter__ExcessiveInputAmount();
         IWETH(WETH).deposit{value: amounts[0]}();
         IWETH(WETH).transfer(_getPair(path[0], path[1]), amounts[0]);
         _swap(amounts, path, to);
         // Refund excess ETH
         if (msg.value > amounts[0]) {
             (bool ok,) = msg.sender.call{value: msg.value - amounts[0]}("");
-            if (!ok) revert HamzaRouter__ETHTransferFailed();
+            if (!ok) revert ArcRouter__ETHTransferFailed();
         }
     }
 
@@ -401,7 +401,7 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
     }
 
     function _getAmountsOut(uint256 amountIn, address[] memory path) internal view returns (uint256[] memory amounts) {
-        if (path.length < 2) revert HamzaRouter__InvalidPath();
+        if (path.length < 2) revert ArcRouter__InvalidPath();
         amounts = new uint256[](path.length);
         amounts[0] = amountIn;
         for (uint256 i = 0; i < path.length - 1; i++) {
@@ -411,7 +411,7 @@ contract HamzaSwapRouterV2 is ReentrancyGuard {
     }
 
     function _getAmountsIn(uint256 amountOut, address[] memory path) internal view returns (uint256[] memory amounts) {
-        if (path.length < 2) revert HamzaRouter__InvalidPath();
+        if (path.length < 2) revert ArcRouter__InvalidPath();
         amounts = new uint256[](path.length);
         amounts[amounts.length - 1] = amountOut;
         for (uint256 i = path.length - 1; i > 0; i--) {

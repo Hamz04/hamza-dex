@@ -10,12 +10,12 @@ import "./interfaces/ILiquidityPool.sol";
 
 /**
  * @title LiquidityPool
- * @author Hamza Ahmad
+ * @author Hamzy
  * @notice ERC-20 LP token representing a share of a two-token liquidity pool.
  *         Implements a constant-product AMM (x * y = k) with 0.3% swap fee.
  *         LP tokens are minted proportionally on deposit and burned on withdrawal.
  * @dev The pool itself handles token transfers and reserve accounting.
- *      Only the authorised router (HamzaSwap) can call mint/burn/swap.
+ *      Only the authorised router (ArcSwap) can call mint/burn/swap.
  */
 contract LiquidityPool is ILiquidityPool, ERC20, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
@@ -94,7 +94,7 @@ contract LiquidityPool is ILiquidityPool, ERC20, ReentrancyGuard, Ownable {
         address initialOwner
     )
         ERC20(
-            string(abi.encodePacked("HamzaDEX LP: ", _tokenSymbol(_tokenA), "/", _tokenSymbol(_tokenB))),
+            string(abi.encodePacked("ArcSwap LP: ", _tokenSymbol(_tokenA), "/", _tokenSymbol(_tokenB))),
             string(abi.encodePacked("HLP-", _tokenSymbol(_tokenA), "-", _tokenSymbol(_tokenB)))
         )
         Ownable(initialOwner)
@@ -118,7 +118,7 @@ contract LiquidityPool is ILiquidityPool, ERC20, ReentrancyGuard, Ownable {
 
     /**
      * @notice Set the authorised router address. Can only be set once.
-     * @param _router Address of the HamzaSwap router
+     * @param _router Address of the ArcSwap router
      */
     function setRouter(address _router) external onlyOwner {
         require(_router != address(0), "LiquidityPool: zero router");

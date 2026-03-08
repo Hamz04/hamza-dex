@@ -7,13 +7,13 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title HamzaToken
- * @author Hamza Ahmad
- * @notice ERC-20 token for the HamzaDEX ecosystem.
+ * @title ArcToken
+ * @author Hamzy
+ * @notice ERC-20 token for the ArcSwap ecosystem.
  *         Supports permit (gasless approvals), burnable, and owner-controlled minting.
  * @dev Uses OpenZeppelin v5 contracts. Initial supply is minted to deployer.
  */
-contract HamzaToken is ERC20, ERC20Burnable, ERC20Permit, Ownable {
+contract ArcToken is ERC20, ERC20Burnable, ERC20Permit, Ownable {
     // ─────────────────────────────────────────────────────────────
     // Constants
     // ─────────────────────────────────────────────────────────────
@@ -60,9 +60,9 @@ contract HamzaToken is ERC20, ERC20Burnable, ERC20Permit, Ownable {
      * @param amount  Amount to mint (in wei, i.e. with 18 decimals)
      */
     function mint(address to, uint256 amount) external onlyOwner {
-        require(to != address(0), "HamzaToken: mint to zero address");
-        require(amount > 0, "HamzaToken: mint amount must be > 0");
-        require(totalSupply() + amount <= MAX_SUPPLY, "HamzaToken: exceeds max supply");
+        require(to != address(0), "ArcToken: mint to zero address");
+        require(amount > 0, "ArcToken: mint amount must be > 0");
+        require(totalSupply() + amount <= MAX_SUPPLY, "ArcToken: exceeds max supply");
 
         _mint(to, amount);
         emit TokensMinted(to, amount, totalSupply());
@@ -77,7 +77,7 @@ contract HamzaToken is ERC20, ERC20Burnable, ERC20Permit, Ownable {
      * @param amount Amount to burn (overrides ERC20Burnable for event emission)
      */
     function burn(uint256 amount) public override {
-        require(amount > 0, "HamzaToken: burn amount must be > 0");
+        require(amount > 0, "ArcToken: burn amount must be > 0");
         super.burn(amount);
         emit TokensBurned(msg.sender, amount, totalSupply());
     }
@@ -88,7 +88,7 @@ contract HamzaToken is ERC20, ERC20Burnable, ERC20Permit, Ownable {
      * @param amount  Amount to burn
      */
     function burnFrom(address account, uint256 amount) public override {
-        require(amount > 0, "HamzaToken: burn amount must be > 0");
+        require(amount > 0, "ArcToken: burn amount must be > 0");
         super.burnFrom(account, amount);
         emit TokensBurned(account, amount, totalSupply());
     }

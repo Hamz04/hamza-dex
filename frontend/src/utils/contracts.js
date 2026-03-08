@@ -6,32 +6,33 @@ import RouterABI from "../abi/Router.json";
 //  Fill in Sepolia addresses after running: npm run deploy:sepolia
 // ─────────────────────────────────────────────────────────────────────────────
 
-// NOTE: Sepolia addresses are pre-computed from CREATE address derivation.
-// Run `npm run deploy:sepolia` with deployer 0x0742d35Cc6634C0532925a3b8D4C9f8a3b1F5e2A
-// to deploy at exactly these addresses.
+// NOTE: Sepolia addresses are empty until you deploy.
+// Run `npm run deploy:sepolia` then copy addresses from deployments/sepolia.json.
 const ADDRESSES = {
   // ── Hardhat localhost (deterministic) ──────────────────────────────────────
   31337: {
     router:    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
     routerV2:  "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6", // next Hardhat deterministic address
-    hamza:     "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    arc:     "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
     weth:      "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
     usdc:      "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-    poolHamzaWeth: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-    poolHamzaUsdc: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    poolArcWeth: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+    poolArcUsdc: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
     poolWethUsdc:  "0x0165878A594ca255338adfa4d48449f69242Eb8F",
   },
 
   // ── Sepolia testnet ────────────────────────────────────────────────────────
+  // Not yet deployed. Run `npm run deploy:sepolia` then paste addresses from
+  // deployments/sepolia.json here.
   11155111: {
-    router:    "0x85e21F0CDb7f3CFAB11244F9Ec391D109F3e27ba",    // Computed via CREATE address derivation — deploy with: npm run deploy:sepolia
-    routerV2:  "0xEFA381BA9B28bFe74caFAF624f4A18cf9d59D8b3",    // Computed via CREATE address derivation — deploy with: npm run deploy:sepolia
-    hamza:     "0xA3C7d1f55F45bf311b2aE60b87a00C951BbdB0e0",  // Computed via CREATE address derivation — deploy with: npm run deploy:sepolia
-    weth:      "0xd62a1c3c715525E60958cE49C8E380Af5053A338",   // Computed via CREATE address derivation — deploy with: npm run deploy:sepolia
-    usdc:      "0x8f7b6561a414dcEeb856eD3506B59e10B35CE4e5",   // Computed via CREATE address derivation — deploy with: npm run deploy:sepolia
-    poolHamzaWeth: "0x78bfE2acFa158F6CFE42c309a4795D480Bc5Df85",
-    poolHamzaUsdc: "0x979D19312b62C8753f616A58f7288eD15D34b848",
-    poolWethUsdc:  "0xA2c5671316938bdde9D77F867f363c5ea5b931FB",
+    router:      "",
+    routerV2:    "",
+    arc:         "",
+    weth:        "",
+    usdc:        "",
+    poolArcWeth: "",
+    poolArcUsdc: "",
+    poolWethUsdc: "",
   },
 };
 
@@ -97,7 +98,7 @@ export const ROUTER_ABI = [
 ];
 
 /**
- * Full ethers-compatible ABI for HamzaSwapRouterV2 (ETH/WETH support).
+ * Full ethers-compatible ABI for ArcSwapRouterV2 (ETH/WETH support).
  * Imported from the generated Router.json artifact.
  */
 export const ROUTER_V2_ABI = RouterABI;
@@ -115,9 +116,9 @@ export function getTokenList(chainId) {
 
   return [
     {
-      symbol:   "HAMZA",
-      name:     "Hamza Token",
-      address:  addrs.hamza,
+      symbol:   "ARC",
+      name:     "Arc Token",
+      address:  addrs.arc,
       decimals: 18,
       color:    "#6366f1",
       logoURI:  null,
@@ -168,7 +169,7 @@ export function getRouterContract(providerOrSigner, chainId) {
 }
 
 /**
- * Returns a read-only or read-write ethers.Contract for HamzaSwapRouterV2
+ * Returns a read-only or read-write ethers.Contract for ArcSwapRouterV2
  * (the ETH/WETH-enabled router).
  * @param {ethers.Provider | ethers.Signer} providerOrSigner
  * @param {bigint | number} chainId

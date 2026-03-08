@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./HamzaSwapPair.sol";
+import "./ArcSwapPair.sol";
 
 /**
- * @title HamzaSwapFactory
- * @dev Deploys and tracks all HamzaSwap trading pairs.
+ * @title ArcSwapFactory
+ * @dev Deploys and tracks all ArcSwap trading pairs.
  */
-contract HamzaSwapFactory {
+contract ArcSwapFactory {
     address public feeTo;
     address public feeToSetter;
 
@@ -25,16 +25,16 @@ contract HamzaSwapFactory {
     }
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
-        require(tokenA != tokenB, "HamzaSwap: IDENTICAL_ADDRESSES");
+        require(tokenA != tokenB, "ArcSwap: IDENTICAL_ADDRESSES");
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), "HamzaSwap: ZERO_ADDRESS");
-        require(getPair[token0][token1] == address(0), "HamzaSwap: PAIR_EXISTS");
+        require(token0 != address(0), "ArcSwap: ZERO_ADDRESS");
+        require(getPair[token0][token1] == address(0), "ArcSwap: PAIR_EXISTS");
 
-        bytes memory bytecode = type(HamzaSwapPair).creationCode;
+        bytes memory bytecode = type(ArcSwapPair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly { pair := create2(0, add(bytecode, 32), mload(bytecode), salt) }
 
-        HamzaSwapPair(pair).initialize(token0, token1);
+        ArcSwapPair(pair).initialize(token0, token1);
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair;
         allPairs.push(pair);
@@ -43,12 +43,12 @@ contract HamzaSwapFactory {
     }
 
     function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter, "HamzaSwap: FORBIDDEN");
+        require(msg.sender == feeToSetter, "ArcSwap: FORBIDDEN");
         feeTo = _feeTo;
     }
 
     function setFeeToSetter(address _feeToSetter) external {
-        require(msg.sender == feeToSetter, "HamzaSwap: FORBIDDEN");
+        require(msg.sender == feeToSetter, "ArcSwap: FORBIDDEN");
         feeToSetter = _feeToSetter;
     }
 }

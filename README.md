@@ -1,4 +1,4 @@
-# HamzaDEX
+# ArcSwap
 
 > Production-quality Decentralized Exchange (DEX) built on Ethereum.
 > Constant-product AMM (Uniswap V2-style), LP tokens, multi-hop routing, and a React + ethers.js v6 frontend.
@@ -13,7 +13,7 @@
 
 ## Live Demo
 
-> **[https://hamza-dex.vercel.app](https://hamza-dex.vercel.app)** _(deploy to activate)_
+> **Live demo not yet deployed.** Frontend runs locally — see [Local Development](#local-development) below.
 
 ---
 
@@ -21,7 +21,7 @@
 
 ```
                           +---------------------------+
-                          |       HamzaDEX Frontend   |
+                          |       ArcSwap Frontend   |
                           |   React + ethers.js v6    |
                           |   Tailwind CSS + Vite     |
                           +-------------+-------------+
@@ -29,7 +29,7 @@
                               MetaMask / WalletConnect
                                         |
                           +-------------v-------------+
-                          |       HamzaSwap.sol       |  <-- Router
+                          |       ArcSwap.sol       |  <-- Router
                           |  AMM Router + Factory     |
                           |  createPair / swap /      |
                           |  addLiquidity             |
@@ -37,7 +37,7 @@
                               |                   |
               +---------------v--+   +------------v----------+
               | LiquidityPool.sol|   | LiquidityPool.sol     |
-              | HAMZA / WETH     |   | HAMZA / USDC          |
+              | ARC / WETH     |   | ARC / USDC          |
               | ERC-20 LP Token  |   | ERC-20 LP Token       |
               | Reserves tracked |   | Reserves tracked      |
               +------------------+   +-----------------------+
@@ -49,8 +49,8 @@
               +------------------+
 
               +------------------+   +------------------+
-              |  HamzaToken.sol  |   |  HamzaToken.sol  |
-              |  HAMZA (ERC-20)  |   |  WETH mock       |
+              |  ArcToken.sol  |   |  ArcToken.sol  |
+              |  ARC (ERC-20)  |   |  WETH mock       |
               |  1M initial sup. |   |  USDC mock       |
               +------------------+   +------------------+
 ```
@@ -67,7 +67,7 @@
 - **Deadline enforcement** — All state-changing calls expire after a timestamp
 - **Reentrancy guard** — All critical functions use OpenZeppelin ReentrancyGuard
 - **TWAP price oracle** — Cumulative price accumulators on every block
-- **Permit support** — ERC-20 permit on HamzaToken for gasless approvals
+- **Permit support** — ERC-20 permit on ArcToken for gasless approvals
 - **Etherscan verification** — Automated on Sepolia via Hardhat Verify
 - **React frontend** — Swap UI, Liquidity panel, candlestick price chart
 - **MetaMask integration** — Connect, network switch, account tracking
@@ -92,17 +92,10 @@
 
 ## Contract Addresses (Sepolia)
 
-> Deploy with `npm run deploy:sepolia` and update these addresses.
-
-| Contract          | Address                                      |
-|-------------------|----------------------------------------------|
-| HamzaToken (HAMZA)| `0x` — deploy to populate                   |
-| WETH Mock         | `0x` — deploy to populate                   |
-| USDC Mock         | `0x` — deploy to populate                   |
-| HamzaSwap Router  | `0x` — deploy to populate                   |
-| HAMZA/WETH Pool   | `0x` — created by router                    |
-| HAMZA/USDC Pool   | `0x` — created by router                    |
-| WETH/USDC Pool    | `0x` — created by router                    |
+> **Not yet deployed to Sepolia.** Contracts run on a local Hardhat network during development.
+>
+> To deploy to Sepolia yourself, see [Sepolia Deployment](#sepolia-deployment) below.
+> After deploying, update `frontend/src/utils/contracts.js` with your addresses.
 
 ---
 
@@ -224,7 +217,7 @@ npm run gas-report
 
 Expected output:
 ```
-  HamzaSwap
+  ArcSwap
     Pair Management
       ✓ should have created 3 pairs
       ✓ should return same pair address regardless of token order
@@ -239,7 +232,7 @@ Expected output:
       ✓ should mint sqrt(amountA * amountB) - MINIMUM_LIQUIDITY LP tokens
       ...
 
-  47 passing (8s)
+  82 passing
 ```
 
 ---
@@ -260,8 +253,8 @@ npm run deploy:local
 
 Output:
 ```
-  [1/6] Deploying HamzaToken (HAMZA)...
-    ✓ HamzaToken (HAMZA) deployed at: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+  [1/6] Deploying ArcToken (ARC)...
+    ✓ ArcToken (ARC) deployed at: 0x5FbDB2315678afecb367f032d93F642f64180aa3
   [2/6] Deploying mock WETH...
   ...
   Deployments saved to deployments/localhost.json
@@ -296,7 +289,7 @@ Visit [sepoliafaucet.com](https://sepoliafaucet.com) or [alchemy.com/faucets/eth
 
 ```env
 PRIVATE_KEY=your_wallet_private_key
-SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<your-alchemy-key>
 ETHERSCAN_API_KEY=your_etherscan_api_key
 ```
 
@@ -332,17 +325,17 @@ npm run build
 ```
 hamza-dex/
 ├── contracts/
-│   ├── HamzaToken.sol         ERC-20 with mint/burn/permit, 1M initial supply
-│   ├── HamzaSwap.sol          AMM router: swap, addLiquidity, removeLiquidity
+│   ├── ArcToken.sol         ERC-20 with mint/burn/permit, 1M initial supply
+│   ├── ArcSwap.sol          AMM router: swap, addLiquidity, removeLiquidity
 │   ├── LiquidityPool.sol      ERC-20 LP token + constant product pool
 │   └── interfaces/
-│       ├── IHamzaSwap.sol     Router interface
+│       ├── IArcSwap.sol     Router interface
 │       └── ILiquidityPool.sol Pool interface
 ├── scripts/
 │   ├── deploy.js              Full deployment + Etherscan verification
 │   └── seed-liquidity.js      Add initial liquidity to all pairs
 ├── test/
-│   ├── HamzaSwap.test.js      47 tests: math, fees, slippage, deadline, multi-hop
+│   ├── ArcSwap.test.js      47 tests: math, fees, slippage, deadline, multi-hop
 │   └── LiquidityPool.test.js  LP minting, proportional withdrawal, reserves
 ├── frontend/
 │   ├── src/
@@ -396,7 +389,7 @@ hamza-dex/
 | `removeLiquidity`     | ~120K    |
 | `swapExactTokens` (1-hop) | ~90K |
 | `swapExactTokens` (2-hop) | ~150K|
-| `HamzaToken.mint`     | ~55K     |
+| `ArcToken.mint`     | ~55K     |
 
 ---
 
@@ -408,14 +401,14 @@ hamza-dex/
 |  Swap                              [⚙]   |
 |  +--------------------------------------+ |
 |  | You Pay             Balance: 1,000   | |
-|  | [  500.00                ] [HAMZA ▼] | |
+|  | [  500.00                ] [ARC ▼] | |
 |  +--------------------------------------+ |
 |                   [⇅]                     |
 |  +--------------------------------------+ |
 |  | You Receive         Balance: 50.21   | |
 |  | [  990.12                ] [WETH  ▼] | |
 |  +--------------------------------------+ |
-|  Rate:         1 HAMZA = 1.980 WETH       |
+|  Rate:         1 ARC = 1.980 WETH       |
 |  Price Impact: 0.12% (Very Low)           |
 |  Min Received: 985.17 WETH (0.5% slippage)|
 |  Fee:          0.3%                       |
@@ -432,7 +425,7 @@ hamza-dex/
 |  Your Position                            |
 |  Pool Share:    49.5%                     |
 |  LP Tokens:     141,421.35                |
-|  HAMZA in pool: 100,000.00                |
+|  ARC in pool: 100,000.00                |
 |  WETH in pool:  50.00                     |
 |  Est. APY:      12.4%                     |
 |                                           |
@@ -440,7 +433,7 @@ hamza-dex/
 |  [25%] [50%] [75%] [100%]                 |
 |                                           |
 |  You will receive:                        |
-|  ~50,000 HAMZA                            |
+|  ~50,000 ARC                            |
 |  ~25 WETH                                 |
 |                                           |
 |  [  Remove 50% Liquidity  ]               |
@@ -465,4 +458,4 @@ MIT — see [LICENSE](LICENSE) for details.
 
 ---
 
-Built with care by **Hamza Ahmad**. Star the repo if you find it useful!
+Built with care by **Hamzy**. Star the repo if you find it useful!

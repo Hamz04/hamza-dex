@@ -46,7 +46,7 @@ export function useWallet() {
   // ── Connect wallet ─────────────────────────────────────────────
   const connect = useCallback(async () => {
     if (!window.ethereum) {
-      setError("MetaMask not found. Please install MetaMask to use HamzaDEX.");
+      setError("MetaMask not found. Please install MetaMask to use ArcSwap.");
       return;
     }
     setConnecting(true);

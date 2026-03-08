@@ -59,7 +59,7 @@ export function useLiquidity(wallet) {
 
     try {
       const addresses  = getAddresses(wallet.chainId);
-      const routerAddr = addresses?.HamzaSwap;
+      const routerAddr = addresses?.ArcSwap;
       if (!routerAddr) throw new Error("Router not deployed on this network");
 
       // Step 1: Approve both tokens
@@ -121,7 +121,7 @@ export function useLiquidity(wallet) {
 
     try {
       const addresses  = getAddresses(wallet.chainId);
-      const routerAddr = addresses?.HamzaSwap;
+      const routerAddr = addresses?.ArcSwap;
       if (!routerAddr) throw new Error("Router not deployed on this network");
 
       // Step 1: Approve LP token

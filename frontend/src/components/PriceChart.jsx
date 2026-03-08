@@ -5,7 +5,7 @@ import { getPoolContract } from '../utils/contracts';
 
 /**
  * PriceChart.jsx
- * Production-quality candlestick + volume chart for HamzaDEX pool price history.
+ * Production-quality candlestick + volume chart for ArcSwap pool price history.
  * Queries on-chain Swap events, groups them into OHLCV candles, and renders
  * via lightweight-charts.
  */
